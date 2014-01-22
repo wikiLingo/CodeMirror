@@ -1,0 +1,11 @@
+{
+	"name": "wikiLingo CodeMirror Mode",
+	"version": "1.0.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/wikiLingo/CodeMirror"
+	},
+	"dependencies": {
+        "CodeMirror": "http://codemirror.net/codemirror.zip"
+	}
+}
