@@ -72,8 +72,27 @@ CodeMirror.defineMode('wikiLingo', function(config) {
     case "-":
       if (stream.eat("=")) {//titleBar
         return chain(inBlock("header string", "=-", inText));
-      } else if (stream.eat("-")) {//deleted
-        return chain(inBlock("error wl-deleted", "--", inText));
+      }
+
+      else if (stream.eat("-")) {//deleted
+        return chain(inBlock("comment wl-deleted", "--", inText));
+      }
+
+      else if (stream.eat("~")) {//no parse
+        return chain(inBlock("meta", "~-"));
+      }
+
+      else if (stream.eat("+")) {//code
+        return chain(inBlock("atom", "+-"));
+      }
+
+      else if (stream.eat("/")) {//pre-formatted text
+        return chain(inBlock("string", "/-"));
+      }
+      break;
+    case "~":
+      if (stream.eat("~")) {//color
+        return chain(inBlock("variable-3", "~~", inText));
       }
       break;
     case "=": //underline
@@ -83,12 +102,25 @@ CodeMirror.defineMode('wikiLingo', function(config) {
       break;
     case ":":
       if (stream.eat(":")) {
-        return chain(inBlock("comment", "::"));
+        return chain(inBlock("string-2", "::"));
       }
       break;
-    case "~": //np
-      if (stream.match("np~")) {
-        return chain(inBlock("meta", "~/np~"));
+    case "/":
+      if (stream.eat("*")) {
+        return chain(inBlock("comment", "*/"));
+      }
+      break;
+    case "@":
+      if (stream.match("FLP")) {
+        return chain(inBlock("builtin", ")"));
+      }
+      else if (stream.match(")")) {
+        return "builtin";
+      }
+      break;
+    case "%"://variable
+      if (stream.match(/[a-zA-Z]/)) {
+        return chain(inBlock("variable variable-2", "%"));
       }
       break;
     }
@@ -112,7 +144,7 @@ CodeMirror.defineMode('wikiLingo', function(config) {
       case "*": //unordered list line item, or <li /> at start of line
       case "#": //ordered list line item, or <li /> at start of line
       case "+": //ordered list line item, or <li /> at start of line
-        return chain(inLine("wl-listitem bracket"));
+        return chain(inLine("wl-listitem attribute"));
         break;
       }
     }

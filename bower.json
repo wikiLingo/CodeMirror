@@ -6,6 +6,6 @@
 		"url": "https://github.com/wikiLingo/CodeMirror"
 	},
 	"dependencies": {
-        "CodeMirror": "http://codemirror.net/codemirror.zip"
+        "CodeMirror": "https://github.com/marijnh/CodeMirror.git"
 	}
 }

@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+    <title>wikiLingo CodeMirror Mode</title>
+    <link rel="stylesheet" type="text/css" href="bower_components/CodeMirror/lib/codemirror.css">
+    <link rel="stylesheet" type="text/css" href="wikiLingo.css">
+</head>
+<body>
+<textarea id="source">
+__Bold__
+::Center::
+-+Code+-
+~~Color:Text~~
+/*Comment*/
+@FLP(clipboard-data-here)
+FutureLink-Protocol
+@)
+!Header1
+!!Header2
+!!!Header3
+!!!!Header4
+!!!!!Header5
+!!!!!!Header6
+''Italic''
+-~Not Parsed~-
+*List (Unordered)
+#List (Ordered)
+-/Pre-Formatted Text/-
+--Strike--
+||Table|Table|Table
+Table|Table|Table||
+-=Title Bar=-
+===Underscore===
+%Variable%
+{PLUGIN(parameter1="value" parameter2='value' parameter3=`value`)} content {PLUGIN}
+{plugin parameter1="value" parameter2='value' parameter3=`value`}
+&lt;tag /&gt;
+
+ !Not a header
+ *Not a list
+ #Not a list
+</textarea>
+</body>
+<script src="bower_components/CodeMirror/lib/codemirror.js"></script>
+<script src="wikiLingo.js"></script>
+<script>
+    CodeMirror.fromTextArea(document.getElementById('source'), {
+        mode: "wikiLingo"
+    });
+</script>
+</html>
