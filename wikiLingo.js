@@ -1,6 +1,9 @@
 CodeMirror.defineMode('wikiLingo', function(config) {
+  var activeStyles = [];
   function inBlock(style, terminator, returnTokenizer) {
     return function(stream, state) {
+      var styles;
+      activeStyles.push(style);
       while (!stream.eol()) {
         if (stream.match(terminator)) {
           state.tokenize = inText;
@@ -9,19 +12,27 @@ CodeMirror.defineMode('wikiLingo', function(config) {
         stream.next();
       }
 
-      if (returnTokenizer) state.tokenize = returnTokenizer;
+      if (returnTokenizer) {
+        state.tokenize = returnTokenizer;
+      }
 
-      return style;
+      styles = activeStyles.join(' ');
+      activeStyles.pop();
+      return styles;
     };
   }
 
   function inLine(style) {
     return function(stream, state) {
+      var styles;
+      activeStyles.push(style);
       while(!stream.eol()) {
         stream.next();
       }
       state.tokenize = inText;
-      return style;
+      styles = activeStyles.join(' ');
+      activeStyles.pop();
+      return styles;
     };
   }
 
@@ -37,32 +48,27 @@ CodeMirror.defineMode('wikiLingo', function(config) {
     //non start of line
     switch (ch) { //switch is generally much faster than if, so it is used here
     case "{": //plugin
-      stream.eat("/");
-      stream.eatSpace();
-      var tagName = "";
-      var c;
-      while ((c = stream.eat(/[^\s\u00a0=\"\'\/?(}]/))) tagName += c;
       state.tokenize = inPlugin;
-      return "tag";
+      return "bracket";
       break;
     case "_": //bold
       if (stream.eat("_")) {
-        return chain(inBlock("strong", "__", inText));
+        return chain(inBlock("strong", "__"));
       }
       break;
     case "'": //italics
       if (stream.eat("'")) {
         // Italic text
-        return chain(inBlock("em", "''", inText));
+        return chain(inBlock("em", "''"));
       }
       break;
     case "(":// Wiki Link
       if (stream.eat("(")) {
-        return chain(inBlock("variable-2", "))", inText));
+        return chain(inBlock("variable-2", "))"));
       }
       break;
     case "[":// Weblink
-      return chain(inBlock("variable-3", "]", inText));
+      return chain(inBlock("variable-3", "]"));
       break;
     case "|": //table
       if (stream.eat("|")) {
@@ -71,11 +77,11 @@ CodeMirror.defineMode('wikiLingo', function(config) {
       break;
     case "-":
       if (stream.eat("=")) {//titleBar
-        return chain(inBlock("header string", "=-", inText));
+        return chain(inBlock("header string", "=-"));
       }
 
       else if (stream.eat("-")) {//deleted
-        return chain(inBlock("comment wl-deleted", "--", inText));
+        return chain(inBlock("comment wl-deleted", "--"));
       }
 
       else if (stream.eat("~")) {//no parse
@@ -92,12 +98,12 @@ CodeMirror.defineMode('wikiLingo', function(config) {
       break;
     case "~":
       if (stream.eat("~")) {//color
-        return chain(inBlock("variable-3", "~~", inText));
+        return chain(inBlock("variable-3", "~~"));
       }
       break;
     case "=": //underline
       if (stream.match("==")) {
-        return chain(inBlock("wl-underline", "===", inText));
+        return chain(inBlock("wl-underline", "==="));
       }
       break;
     case ":":
@@ -120,7 +126,12 @@ CodeMirror.defineMode('wikiLingo', function(config) {
       break;
     case "%"://variable
       if (stream.match(/[a-zA-Z]/)) {
-        return chain(inBlock("variable variable-2", "%"));
+        stream.eatWhile(/[a-zA-Z_\-0-9]/);
+        if (stream.eat('%')) {
+            return "variable variable-2";
+        } else {
+            return "error";
+        }
       }
       break;
     }
@@ -153,53 +164,58 @@ CodeMirror.defineMode('wikiLingo', function(config) {
     return null;
   }
 
-  var indentUnit = config.indentUnit;
+  var indentUnit = config.indentUnit,
 
-  // Return variables for tokenizers
-  var pluginName, type;
+    // Return variables for tokenizers
+    pluginName,
+    type,
+    isQuote = /[\'\"`]/;
+
   function inPlugin(stream, state) {
-    var ch = stream.next();
-    var peek = stream.peek();
+    if (stream.eatWhile(/[A-Z0-9_-]+/)) {
+      //plugin
+      return 'tag'
+    } else if (stream.eatWhile(/[a-z0-9_-]+/)) {
+      //inline-plugin
+      return 'tag'
+    }
 
+    var ch = stream.next(),
+        peek = stream.peek();
     if (ch == "}") {
       state.tokenize = inText;
       //type = ch == ")" ? "endPlugin" : "selfclosePlugin"; inPlugin
-      return "tag";
+      return "bracket";
     } else if (ch == "(" || ch == ")") {
       return "bracket";
     } else if (ch == "=") {
       type = "equals";
 
-      if (peek == ">") {
-        ch = stream.next();
-        peek = stream.peek();
-      }
-
       //here we detect values directly after equal character with no quotes
-      if (!/[\'\"]/.test(peek)) {
+      if (!isQuote.test(peek)) {
         state.tokenize = inAttributeNoQuote();
       }
       //end detect values
 
       return "operator";
-    } else if (/[\'\"]/.test(ch)) {
+    } else if (isQuote.test(ch)) {
       state.tokenize = inAttribute(ch);
-      return state.tokenize(stream, state);
+      return 'quote';
     } else {
-      stream.eatWhile(/[^\s\u00a0=\"\'\/?]/);
+      stream.eatWhile(/[^\s\u00a0=\"\'`\/?]/);
       return "keyword";
     }
   }
 
   function inAttribute(quote) {
     return function(stream, state) {
-      while (!stream.eol()) {
-        if (stream.next() == quote) {
+      switch (stream.next()) {
+        case quote:
           state.tokenize = inPlugin;
-          break;
-        }
+          return 'quote';
+        default:
+          return 'string';
       }
-      return "string";
     };
   }
 
@@ -208,14 +224,14 @@ CodeMirror.defineMode('wikiLingo', function(config) {
       while (!stream.eol()) {
         var ch = stream.next();
         var peek = stream.peek();
-        if (ch == " " || ch == "," || /[ )}]/.test(peek)) {
-      state.tokenize = inPlugin;
-      break;
-    }
+        if (ch == " " || /[ )}]/.test(peek)) {
+          state.tokenize = inPlugin;
+         break;
+        }
+      }
+      return "string";
+    };
   }
-  return "string";
-};
-                     }
 
 var curState, setStyle;
 function pass() {
