@@ -1,5 +1,5 @@
 {
-    "name": "wikilingo/codemirror",
+    "name": "wikilingo/codemirror-mode",
     "description": "Syntax highlighter for wikiLingo",
     "require": {
         "php": ">=5.3.0"
